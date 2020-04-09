@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:http-policy="http://www.mulesoft.org/schema/mule/http-policy"
+      xmlns:http-transform="http://www.mulesoft.org/schema/mule/http-policy-transform"	  
+	  xmlns:mule-kerberos="http://www.mulesoft.org/schema/mule/mule-kerberos"
+	  xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+               http://www.mulesoft.org/schema/mule/http-policy http://www.mulesoft.org/schema/mule/http-policy/current/mule-http-policy.xsd
+               http://www.mulesoft.org/schema/mule/http-policy-transform http://www.mulesoft.org/schema/mule/http-policy-transform/current/mule-http-policy-transform.xsd 
+			   http://www.mulesoft.org/schema/mule/mule-kerberos http://www.mulesoft.org/schema/mule/mule-kerberos/current/mule-mule-kerberos.xsd
+			   http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+
+	<mule-kerberos:config name="Mule_kerberos_Config">
+		<mule-kerberos:connection ldapUrl="{{{ldapUrl}}}" ldapUser="{{{ldapUser}}}" servicePrincipal="{{{servicePrincipal}}}" ldapPassword="{{{ldapPassword}}}" keytabLocation="{{{keytabLocation}}}" ldapBase="{{{ldapBase}}}" ldapSearchBase="{{{ldapSearchBase}}}" ldapFilter="{{{ldapFilter}}}" />
+	</mule-kerberos:config>
+		
+    <http-policy:proxy name="{{{policyId}}}-custom-policy">
+        <http-policy:source>
+			<try>
+				<logger message="Beginning of kerberos auth custom policy "/>
+				<set-variable variableName="token" value="#[attributes.headers.authorization]"/>
+				<validation:is-not-null value='#[vars.token]' message='#["Authorization header is missing"]'/>
+				<mule-kerberos:validate authorizationHeader="#[vars.token]" config-ref="Mule_kerberos_Config"/>
+				<logger message="End of kerberos auth custom policy"/>
+				<http-policy:execute-next/>
+				 <error-handler>
+					<on-error-continue type="MULE-KERBEROS:BAD_ENCODING, MULE-KERBEROS:BAD_TOKEN, MULE-KERBEROS:BAD_TOKEN_FORMAT, MULE-KERBEROS:CLIENT_SECURITY, VALIDATION:NULL">
+						<http-transform:set-response statusCode="401">
+							<http-transform:body>
+								#[ output application/json
+								---
+								{"error": "$(error.description)"}
+								]
+							</http-transform:body>
+							<http-transform:headers>#[ {'WWW-Authenticate': 'Negotiate'} ]</http-transform:headers>
+						</http-transform:set-response>
+					</on-error-continue>
+					<on-error-continue type="MULE-KERBEROS:CONNECTIVITY, MULE-KERBEROS:INTERNAL_SERVER_ERROR, MULE-KERBEROS:RETRY_EXHAUSTED, EXPRESSION, STREAM_MAXIMUM_SIZE_EXCEEDED, ANY">
+						<http-transform:set-response statusCode="500">
+							<http-transform:body>
+								#[ output application/json
+								---
+								{"error": "Unable to authenticate the kerberos token at this time, internal error occured"}
+								]
+							</http-transform:body>
+							<http-transform:headers>#[ {'WWW-Authenticate': 'Negotiate'} ]</http-transform:headers>
+						</http-transform:set-response>
+					</on-error-continue>										
+				</error-handler> 
+			</try>
+        </http-policy:source>
+    </http-policy:proxy>
+</mule>
