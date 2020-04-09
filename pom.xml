@@ -42,7 +42,7 @@
             <classifier>mule-plugin</classifier>
         </dependency>
 		<dependency>
-            <groupId>9d4e4aca-6e68-4723-832e-f92002519716</groupId>
+            <groupId>${groupId}</groupId>
             <artifactId>mule-kerberos-extension</artifactId>
             <version>1.0.3-SNAPSHOT</version>
             <classifier>mule-plugin</classifier>
