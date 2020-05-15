@@ -1,7 +1,7 @@
 # kerberos-auth-custom-policy
 
-This custom policy is applied to Mule4 APIs protect the APIs with Kerberos V5 SPNEGO authentication protocol. 
-This policy used a custom plugin- https://github.com/mulesoft-consulting/Mule4-kerberos-Extension.git
+This custom policy is applied to Mule4 APIs to protect the APIs with Kerberos V5 SPNEGO authentication protocol. 
+This policy uses custom plugin to do the kerberos ticket validation - https://github.com/mulesoft-consulting/Mule4-kerberos-Extension.git
 
 
 ## Deploying to exchange
@@ -20,7 +20,6 @@ For local install, give any groupId and issue `mvn clean install`
 
 
 
-```
 ### Sample Values
 
 #### ldapUrl
